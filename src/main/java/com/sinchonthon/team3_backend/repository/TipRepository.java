@@ -43,7 +43,9 @@ public interface TipRepository extends JpaRepository<Tip, Long> {
             JOIN t.user u
             WHERE (:categoryId IS NULL OR c.id = :categoryId)
               AND (:userId IS NULL OR u.id = :userId)
-              AND (:keyword IS NULL OR t.title LIKE CONCAT('%', :keyword, '%') OR t.content LIKE CONCAT('%', :keyword, '%'))
+              AND (:keyword IS NULL
+                   OR REPLACE(t.title, ' ', '') LIKE CONCAT('%', REPLACE(:keyword, ' ', ''), '%')
+                   OR REPLACE(t.content, ' ', '') LIKE CONCAT('%', REPLACE(:keyword, ' ', ''), '%'))
             ORDER BY t.createdAt DESC
             """)
     Page<TipFeedResponse> findFeedByLatest(@Param("categoryId") Long categoryId, @Param("userId") Long userId,
@@ -62,9 +64,59 @@ public interface TipRepository extends JpaRepository<Tip, Long> {
             JOIN t.user u
             WHERE (:categoryId IS NULL OR c.id = :categoryId)
               AND (:userId IS NULL OR u.id = :userId)
-              AND (:keyword IS NULL OR t.title LIKE CONCAT('%', :keyword, '%') OR t.content LIKE CONCAT('%', :keyword, '%'))
+              AND (:keyword IS NULL
+                   OR REPLACE(t.title, ' ', '') LIKE CONCAT('%', REPLACE(:keyword, ' ', ''), '%')
+                   OR REPLACE(t.content, ' ', '') LIKE CONCAT('%', REPLACE(:keyword, ' ', ''), '%'))
             ORDER BY (SELECT COUNT(r2) FROM TipReaction r2 WHERE r2.tip = t AND r2.isLike = true) DESC
             """)
     Page<TipFeedResponse> findFeedByLikes(@Param("categoryId") Long categoryId, @Param("userId") Long userId,
+            @Param("keyword") String keyword, Pageable pageable);
+
+    @Query("""
+            SELECT new com.sinchonthon.team3_backend.dto.response.TipFeedResponse(
+                t.id, t.title, c.id, c.name, p.id, p.name,
+                u.id, u.nickname, u.trustScore, u.livingAloneYears,
+                t.isFiltered, t.createdAt,
+                (SELECT COUNT(r) FROM TipReaction r WHERE r.tip = t AND r.isLike = true)
+            )
+            FROM Tip t
+            JOIN t.category c
+            JOIN t.place p
+            JOIN t.user u
+            WHERE (:categoryId IS NULL OR c.id = :categoryId)
+              AND (:userId IS NULL OR u.id = :userId)
+              AND (:keyword IS NULL
+                   OR REPLACE(t.title, ' ', '') LIKE CONCAT('%', REPLACE(:keyword, ' ', ''), '%')
+                   OR REPLACE(t.content, ' ', '') LIKE CONCAT('%', REPLACE(:keyword, ' ', ''), '%'))
+            ORDER BY u.trustScore DESC, t.createdAt DESC
+            """)
+    Page<TipFeedResponse> findFeedByTrust(@Param("categoryId") Long categoryId, @Param("userId") Long userId,
+            @Param("keyword") String keyword, Pageable pageable);
+
+    @Query("""
+            SELECT new com.sinchonthon.team3_backend.dto.response.TipFeedResponse(
+                t.id, t.title, c.id, c.name, p.id, p.name,
+                u.id, u.nickname, u.trustScore, u.livingAloneYears,
+                t.isFiltered, t.createdAt,
+                (SELECT COUNT(r) FROM TipReaction r WHERE r.tip = t AND r.isLike = true)
+            )
+            FROM Tip t
+            JOIN t.category c
+            JOIN t.place p
+            JOIN t.user u
+            WHERE (:categoryId IS NULL OR c.id = :categoryId)
+              AND (:userId IS NULL OR u.id = :userId)
+              AND (REPLACE(t.title, ' ', '') LIKE CONCAT('%', REPLACE(:keyword, ' ', ''), '%')
+                   OR REPLACE(t.content, ' ', '') LIKE CONCAT('%', REPLACE(:keyword, ' ', ''), '%'))
+            ORDER BY
+                CASE
+                    WHEN REPLACE(t.title, ' ', '') LIKE CONCAT('%', REPLACE(:keyword, ' ', ''), '%')
+                         AND REPLACE(t.content, ' ', '') LIKE CONCAT('%', REPLACE(:keyword, ' ', ''), '%') THEN 0
+                    WHEN REPLACE(t.title, ' ', '') LIKE CONCAT('%', REPLACE(:keyword, ' ', ''), '%') THEN 1
+                    ELSE 2
+                END ASC,
+                t.createdAt DESC
+            """)
+    Page<TipFeedResponse> findFeedByRelevance(@Param("categoryId") Long categoryId, @Param("userId") Long userId,
             @Param("keyword") String keyword, Pageable pageable);
 }
