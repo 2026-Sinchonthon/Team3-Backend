@@ -49,6 +49,18 @@ public class TipController {
         return ApiResponse.success(200, "반응 취소 성공", service.cancelReaction(tipId, currentUserId(authentication)));
     }
 
+    @PostMapping("/{tipId}/scraps")
+    ApiResponse<Void> scrap(@PathVariable Long tipId, Authentication authentication) {
+        service.scrap(tipId, currentUserId(authentication));
+        return ApiResponse.success(201, "꿀팁 스크랩 성공", null);
+    }
+
+    @DeleteMapping("/{tipId}/scraps")
+    ApiResponse<Void> cancelScrap(@PathVariable Long tipId, Authentication authentication) {
+        service.cancelScrap(tipId, currentUserId(authentication));
+        return ApiResponse.success(200, "꿀팁 스크랩 취소 성공", null);
+    }
+
     private Long currentUserId(Authentication authentication) {
         return Long.valueOf(authentication.getName());
     }

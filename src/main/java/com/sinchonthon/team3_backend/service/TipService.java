@@ -3,12 +3,15 @@ package com.sinchonthon.team3_backend.service;
 import com.sinchonthon.team3_backend.domain.tip.Tip;
 import com.sinchonthon.team3_backend.domain.tip.TipReaction;
 import com.sinchonthon.team3_backend.domain.tip.TipReactionId;
+import com.sinchonthon.team3_backend.domain.tip.TipScrap;
+import com.sinchonthon.team3_backend.domain.tip.TipScrapId;
 import com.sinchonthon.team3_backend.dto.response.TipDetailResponse;
 import com.sinchonthon.team3_backend.dto.response.TipFeedResponse;
 import com.sinchonthon.team3_backend.dto.response.TipReactionResponse;
 import com.sinchonthon.team3_backend.exception.ApiException;
 import com.sinchonthon.team3_backend.repository.TipReactionRepository;
 import com.sinchonthon.team3_backend.repository.TipRepository;
+import com.sinchonthon.team3_backend.repository.TipScrapRepository;
 import com.sinchonthon.team3_backend.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,11 +26,14 @@ public class TipService {
 
     private final TipRepository tips;
     private final TipReactionRepository reactions;
+    private final TipScrapRepository scraps;
     private final UserRepository users;
 
-    public TipService(TipRepository tips, TipReactionRepository reactions, UserRepository users) {
+    public TipService(TipRepository tips, TipReactionRepository reactions, TipScrapRepository scraps,
+            UserRepository users) {
         this.tips = tips;
         this.reactions = reactions;
+        this.scraps = scraps;
         this.users = users;
     }
 
@@ -61,6 +67,26 @@ public class TipService {
         reactions.deleteById(new TipReactionId(userId, tipId));
         refreshFilteredState(tip);
         return summarize(tip, userId);
+    }
+
+    @Transactional
+    public void scrap(Long tipId, Long userId) {
+        TipScrapId id = new TipScrapId(userId, tipId);
+        if (scraps.existsById(id)) {
+            return;
+        }
+        Tip tip = tips.findById(tipId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "존재하지 않는 게시글입니다."));
+        scraps.save(new TipScrap(users.getReferenceById(userId), tip));
+    }
+
+    @Transactional
+    public void cancelScrap(Long tipId, Long userId) {
+        TipScrapId id = new TipScrapId(userId, tipId);
+        if (!scraps.existsById(id)) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "스크랩한 적 없는 게시글입니다.");
+        }
+        scraps.deleteById(id);
     }
 
     private void refreshFilteredState(Tip tip) {

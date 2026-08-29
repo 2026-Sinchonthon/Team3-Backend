@@ -1,11 +1,15 @@
 package com.sinchonthon.team3_backend.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.sinchonthon.team3_backend.domain.place.Place;
 import com.sinchonthon.team3_backend.domain.tip.Category;
 import com.sinchonthon.team3_backend.domain.tip.Tip;
+import com.sinchonthon.team3_backend.domain.tip.TipScrapId;
 import com.sinchonthon.team3_backend.domain.user.User;
+import com.sinchonthon.team3_backend.exception.ApiException;
+import com.sinchonthon.team3_backend.repository.TipScrapRepository;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -19,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 class TipServiceTest {
 
     @Autowired TipService tipService;
+    @Autowired TipScrapRepository tipScrapRepository;
     @Autowired EntityManager em;
 
     @Test
@@ -55,5 +60,32 @@ class TipServiceTest {
         assertThat(afterCancel.likeCount()).isEqualTo(0);
         assertThat(afterCancel.dislikeCount()).isEqualTo(4);
         assertThat(afterCancel.isFiltered()).isFalse();
+    }
+
+    @Test
+    void 스크랩을_등록하고_취소할_수_있다() {
+        User writer = new User("scrap-writer@test.com");
+        em.persist(writer);
+        Category category = new Category("생활 꿀팁");
+        em.persist(category);
+        Place place = new Place("kakao-2", "다이소 신촌점", "서울", BigDecimal.valueOf(37.55), BigDecimal.valueOf(126.93), null);
+        em.persist(place);
+        Tip tip = new Tip(writer, place, category, "생필품 저렴해요", "1000원샵도 있어요", null, Instant.now().plusSeconds(3600));
+        em.persist(tip);
+        em.flush();
+
+        tipService.scrap(tip.getId(), writer.getId());
+        assertThat(tipScrapRepository.existsById(new TipScrapId(writer.getId(), tip.getId()))).isTrue();
+
+        // 중복 스크랩 요청은 예외 없이 무시된다 (idempotent)
+        tipService.scrap(tip.getId(), writer.getId());
+        assertThat(tipScrapRepository.count()).isEqualTo(1);
+
+        tipService.cancelScrap(tip.getId(), writer.getId());
+        assertThat(tipScrapRepository.existsById(new TipScrapId(writer.getId(), tip.getId()))).isFalse();
+
+        // 스크랩한 적 없는 상태에서 취소하면 예외가 발생한다
+        assertThatThrownBy(() -> tipService.cancelScrap(tip.getId(), writer.getId()))
+                .isInstanceOf(ApiException.class);
     }
 }
