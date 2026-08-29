@@ -2,8 +2,10 @@ package com.sinchonthon.team3_backend.controller;
 
 import com.sinchonthon.team3_backend.common.ApiResponse;
 import com.sinchonthon.team3_backend.dto.request.TipCommentRequest;
+import com.sinchonthon.team3_backend.dto.request.TipCreateRequest;
 import com.sinchonthon.team3_backend.dto.request.TipReactionRequest;
 import com.sinchonthon.team3_backend.dto.response.TipCommentResponse;
+import com.sinchonthon.team3_backend.dto.response.TipCreateResponse;
 import com.sinchonthon.team3_backend.dto.response.TipDetailResponse;
 import com.sinchonthon.team3_backend.dto.response.TipFeedResponse;
 import com.sinchonthon.team3_backend.dto.response.TipReactionResponse;
@@ -32,6 +34,24 @@ public class TipController {
             @RequestParam(defaultValue = "latest") String sort,
             @PageableDefault(size = 20) Pageable pageable) {
         return ApiResponse.success(200, "게시글 피드 조회 성공", service.getFeed(categoryId, userId, keyword, sort, pageable));
+    }
+
+    @GetMapping("/place/{placeId}")
+    ApiResponse<Page<TipFeedResponse>> getTipsByPlace(@PathVariable Long placeId,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(defaultValue = "latest") String sort,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ApiResponse.success(200, "장소별 게시글 조회 성공",
+                service.getTipsByPlace(placeId, categoryId, sort, pageable));
+    }
+
+    @PostMapping
+    ApiResponse<TipCreateResponse> createTip(@Valid @RequestBody TipCreateRequest request,
+            Authentication authentication) {
+        var result = service.createTip(currentUserId(authentication), request.categoryId(), request.kakaoPlaceId(),
+                request.placeName(), request.placeAddress(), request.latitude(), request.longitude(),
+                request.title(), request.content());
+        return ApiResponse.success(201, "꿀팁 등록 성공", result);
     }
 
     @GetMapping("/{tipId}")
