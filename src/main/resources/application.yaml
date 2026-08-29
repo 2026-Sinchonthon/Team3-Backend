@@ -1,25 +1,33 @@
 spring:
   application:
     name: team3-backend
-
   datasource:
-    url: jdbc:h2:mem:testdb
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
-
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/team3}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
   jpa:
+    open-in-view: false
+    defer-datasource-initialization: true
     hibernate:
       ddl-auto: update
-    show-sql: true
     properties:
-      hibernate:
-        format_sql: true
+      hibernate.jdbc.time_zone: UTC
+  sql:
+    init:
+      mode: always
 
 server:
   port: ${PORT:8080}
+
+app:
+  frontend-origin: ${FRONTEND_ORIGIN:http://localhost:3000}
+  jwt:
+    secret: ${JWT_SECRET:local-development-jwt-secret-must-be-at-least-32-bytes}
+    issuer: team3-backend
+    access-seconds: 1800
+    refresh-seconds: 1209600
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:local-client}
+    issuer: ${GOOGLE_ISSUER:https://accounts.google.com}
+  auth:
+    refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:false}

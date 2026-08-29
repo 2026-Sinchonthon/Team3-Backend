@@ -1,9 +1,13 @@
 HELP.md
 .gradle
+.gradle-local/
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
+
+### Environment variables / local overrides ###
+.env
 
 ### STS ###
 .apt_generated
