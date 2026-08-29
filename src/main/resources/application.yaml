@@ -17,7 +17,7 @@ server:
   port: ${PORT:8080}
 
 app:
-  frontend-origin: ${FRONTEND_ORIGIN:http://localhost:3000}
+  frontend-origin: ${FRONTEND_ORIGIN:http://localhost:3000,http://localhost:5173}
   jwt:
     secret: ${JWT_SECRET:local-development-jwt-secret-must-be-at-least-32-bytes}
     issuer: team3-backend
