@@ -156,4 +156,39 @@ class TipServiceTest {
         assertThat(tipScrapRepository.count()).isEqualTo(0);
         assertThat(tipCommentRepository.count()).isEqualTo(0);
     }
+
+    @Test
+    void 신뢰도순과_관련도순으로_피드를_정렬할_수_있다() {
+        User highTrustWriter = new User("high-trust@test.com");
+        em.persist(highTrustWriter);
+        User lowTrustWriter = new User("low-trust@test.com");
+        em.persist(lowTrustWriter);
+        em.flush();
+        em.createQuery("UPDATE User u SET u.trustScore = 90 WHERE u.id = :id")
+                .setParameter("id", highTrustWriter.getId()).executeUpdate();
+        em.createQuery("UPDATE User u SET u.trustScore = 10 WHERE u.id = :id")
+                .setParameter("id", lowTrustWriter.getId()).executeUpdate();
+        em.clear();
+        highTrustWriter = em.find(User.class, highTrustWriter.getId());
+        lowTrustWriter = em.find(User.class, lowTrustWriter.getId());
+
+        Category category = new Category("생활 꿀팁");
+        em.persist(category);
+        Place place = new Place("kakao-5", "올리브영", "서울", BigDecimal.valueOf(37.55), BigDecimal.valueOf(126.93), null);
+        em.persist(place);
+        Tip lowTrustTip = new Tip(lowTrustWriter, place, category, "세일 정보", "세일해요", null, Instant.now().plusSeconds(3600));
+        em.persist(lowTrustTip);
+        Tip highTrustTip = new Tip(highTrustWriter, place, category, "적립 팁", "적립 잘 챙기세요", null, Instant.now().plusSeconds(3600));
+        em.persist(highTrustTip);
+        em.flush();
+
+        var byTrust = tipService.getFeed(null, null, null, "trust",
+                org.springframework.data.domain.PageRequest.of(0, 10));
+        assertThat(byTrust.getContent().get(0).tipId()).isEqualTo(highTrustTip.getId());
+
+        var byRelevance = tipService.getFeed(null, null, "적립", "relevance",
+                org.springframework.data.domain.PageRequest.of(0, 10));
+        assertThat(byRelevance.getContent()).hasSize(1);
+        assertThat(byRelevance.getContent().get(0).tipId()).isEqualTo(highTrustTip.getId());
+    }
 }

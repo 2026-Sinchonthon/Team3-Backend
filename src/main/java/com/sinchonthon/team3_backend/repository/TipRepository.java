@@ -67,4 +67,47 @@ public interface TipRepository extends JpaRepository<Tip, Long> {
             """)
     Page<TipFeedResponse> findFeedByLikes(@Param("categoryId") Long categoryId, @Param("userId") Long userId,
             @Param("keyword") String keyword, Pageable pageable);
+
+    @Query("""
+            SELECT new com.sinchonthon.team3_backend.dto.response.TipFeedResponse(
+                t.id, t.title, c.id, c.name, p.id, p.name,
+                u.id, u.nickname, u.trustScore, u.livingAloneYears,
+                t.isFiltered, t.createdAt,
+                (SELECT COUNT(r) FROM TipReaction r WHERE r.tip = t AND r.isLike = true)
+            )
+            FROM Tip t
+            JOIN t.category c
+            JOIN t.place p
+            JOIN t.user u
+            WHERE (:categoryId IS NULL OR c.id = :categoryId)
+              AND (:userId IS NULL OR u.id = :userId)
+              AND (:keyword IS NULL OR t.title LIKE CONCAT('%', :keyword, '%') OR t.content LIKE CONCAT('%', :keyword, '%'))
+            ORDER BY u.trustScore DESC, t.createdAt DESC
+            """)
+    Page<TipFeedResponse> findFeedByTrust(@Param("categoryId") Long categoryId, @Param("userId") Long userId,
+            @Param("keyword") String keyword, Pageable pageable);
+
+    @Query("""
+            SELECT new com.sinchonthon.team3_backend.dto.response.TipFeedResponse(
+                t.id, t.title, c.id, c.name, p.id, p.name,
+                u.id, u.nickname, u.trustScore, u.livingAloneYears,
+                t.isFiltered, t.createdAt,
+                (SELECT COUNT(r) FROM TipReaction r WHERE r.tip = t AND r.isLike = true)
+            )
+            FROM Tip t
+            JOIN t.category c
+            JOIN t.place p
+            JOIN t.user u
+            WHERE (:categoryId IS NULL OR c.id = :categoryId)
+              AND (:userId IS NULL OR u.id = :userId)
+              AND (t.title LIKE CONCAT('%', :keyword, '%') OR t.content LIKE CONCAT('%', :keyword, '%'))
+            ORDER BY
+                CASE
+                    WHEN t.title LIKE CONCAT('%', :keyword, '%') THEN 0
+                    ELSE 1
+                END ASC,
+                t.createdAt DESC
+            """)
+    Page<TipFeedResponse> findFeedByRelevance(@Param("categoryId") Long categoryId, @Param("userId") Long userId,
+            @Param("keyword") String keyword, Pageable pageable);
 }

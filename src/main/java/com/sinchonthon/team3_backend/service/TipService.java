@@ -44,9 +44,15 @@ public class TipService {
     }
 
     public Page<TipFeedResponse> getFeed(Long categoryId, Long userId, String keyword, String sort, Pageable pageable) {
-        return "likes".equalsIgnoreCase(sort)
-                ? tips.findFeedByLikes(categoryId, userId, keyword, pageable)
-                : tips.findFeedByLatest(categoryId, userId, keyword, pageable);
+        return switch (sort == null ? "" : sort.toLowerCase()) {
+            case "likes" -> tips.findFeedByLikes(categoryId, userId, keyword, pageable);
+            case "trust" -> tips.findFeedByTrust(categoryId, userId, keyword, pageable);
+            // 관련도순은 키워드가 없으면 정의될 수 없어 최신순으로 대체한다
+            case "relevance" -> (keyword == null || keyword.isBlank())
+                    ? tips.findFeedByLatest(categoryId, userId, keyword, pageable)
+                    : tips.findFeedByRelevance(categoryId, userId, keyword, pageable);
+            default -> tips.findFeedByLatest(categoryId, userId, keyword, pageable);
+        };
     }
 
     public TipDetailResponse getDetail(Long tipId, Long currentUserId) {
