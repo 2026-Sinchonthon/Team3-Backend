@@ -1,7 +1,7 @@
 package com.sinchonthon.team3_backend.service;
 
-import com.sinchonthon.team3_backend.domain.RefreshSession;
-import com.sinchonthon.team3_backend.domain.User;
+import com.sinchonthon.team3_backend.domain.user.RefreshSession;
+import com.sinchonthon.team3_backend.domain.user.User;
 import com.sinchonthon.team3_backend.exception.ApiException;
 import com.sinchonthon.team3_backend.oauth.GoogleIdTokenVerifier;
 import com.sinchonthon.team3_backend.repository.RefreshSessionRepository;

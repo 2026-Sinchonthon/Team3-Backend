@@ -1,5 +1,7 @@
-package com.sinchonthon.team3_backend.domain;
+package com.sinchonthon.team3_backend.domain.tip;
 
+import com.sinchonthon.team3_backend.domain.place.Place;
+import com.sinchonthon.team3_backend.domain.user.User;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.time.LocalDate;

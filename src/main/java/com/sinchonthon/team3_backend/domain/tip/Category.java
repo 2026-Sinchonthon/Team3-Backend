@@ -1,4 +1,4 @@
-package com.sinchonthon.team3_backend.domain;
+package com.sinchonthon.team3_backend.domain.tip;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
