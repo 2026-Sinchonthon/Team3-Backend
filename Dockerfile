@@ -6,5 +6,5 @@ RUN chmod +x ./gradlew && ./gradlew clean build -x test
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=build /app/build/libs/*.jar app.jar
-EXPOSE 8080
-ENTRYPOINT ["java", "-Xmx350m", "-jar", "app.jar"]
+EXPOSE 10000
+ENTRYPOINT ["sh", "-c", "java -Xmx350m -Dserver.port=${PORT:-10000} -jar app.jar"]
