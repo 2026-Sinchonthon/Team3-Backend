@@ -9,10 +9,9 @@ import com.sinchonthon.team3_backend.domain.tip.TipReactionId;
 import com.sinchonthon.team3_backend.domain.tip.TipScrap;
 import com.sinchonthon.team3_backend.domain.tip.TipScrapId;
 import com.sinchonthon.team3_backend.domain.user.User;
-import com.sinchonthon.team3_backend.dto.request.CreateTipRequest;
-import com.sinchonthon.team3_backend.dto.response.CreateTipResponse;
 import com.sinchonthon.team3_backend.dto.response.MyTipListResponse;
 import com.sinchonthon.team3_backend.dto.response.TipCommentResponse;
+import com.sinchonthon.team3_backend.dto.response.TipCreateResponse;
 import com.sinchonthon.team3_backend.dto.response.TipDetailResponse;
 import com.sinchonthon.team3_backend.dto.response.TipFeedResponse;
 import com.sinchonthon.team3_backend.dto.response.TipReactionResponse;
@@ -24,9 +23,9 @@ import com.sinchonthon.team3_backend.repository.TipReactionRepository;
 import com.sinchonthon.team3_backend.repository.TipRepository;
 import com.sinchonthon.team3_backend.repository.TipScrapRepository;
 import com.sinchonthon.team3_backend.repository.UserRepository;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -39,47 +38,26 @@ import org.springframework.transaction.annotation.Transactional;
 public class TipService {
     private static final long MIN_REACTION_THRESHOLD = 5;
     private static final double DISLIKE_RATIO_THRESHOLD = 0.5;
-    private static final long VALID_DAYS = 365;
+    private static final long TIP_VALID_DAYS = 365;
 
     private final TipRepository tips;
     private final TipReactionRepository reactions;
     private final TipScrapRepository scraps;
     private final TipCommentRepository comments;
     private final UserRepository users;
-    private final CategoryRepository categories;
     private final PlaceRepository places;
+    private final CategoryRepository categories;
 
     public TipService(TipRepository tips, TipReactionRepository reactions, TipScrapRepository scraps,
-            TipCommentRepository comments, UserRepository users, CategoryRepository categories,
-            PlaceRepository places) {
+            TipCommentRepository comments, UserRepository users, PlaceRepository places,
+            CategoryRepository categories) {
         this.tips = tips;
         this.reactions = reactions;
         this.scraps = scraps;
         this.comments = comments;
         this.users = users;
-        this.categories = categories;
         this.places = places;
-    }
-
-    @Transactional
-    public CreateTipResponse create(Long userId, CreateTipRequest request) {
-        User user = users.findById(userId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
-        Category category = categories.findById(request.categoryId())
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "카테고리를 찾을 수 없습니다."));
-        CreateTipRequest.Location location = request.location();
-        Place place = places.save(new Place(
-                "manual-" + UUID.randomUUID(), location.name().trim(), trimToNull(location.address()),
-                location.latitude(), location.longitude(), null));
-        Tip tip = tips.save(new Tip(user, place, category, request.title().trim(), request.content().trim(),
-                null, Instant.now().plus(VALID_DAYS, ChronoUnit.DAYS)));
-        return new CreateTipResponse(
-                tip.getId(), user.getId(),
-                new CreateTipResponse.CategoryInfo(category.getId(), category.getName()),
-                tip.getTitle(), tip.getContent(),
-                new CreateTipResponse.PlaceInfo(place.getId(), place.getName(), place.getAddress(),
-                        place.getLatitude(), place.getLongitude()),
-                tip.getValidUntil(), tip.getCreatedAt());
+        this.categories = categories;
     }
 
     @Transactional(readOnly = true)
@@ -110,6 +88,29 @@ public class TipService {
                     : tips.findFeedByRelevance(categoryId, userId, keyword, pageable);
             default -> tips.findFeedByLatest(categoryId, userId, keyword, pageable);
         };
+    }
+
+    public Page<TipFeedResponse> getTipsByPlace(Long placeId, Long categoryId, String sort, Pageable pageable) {
+        String normalized = sort == null ? "latest" : sort.toLowerCase();
+        return switch (normalized) {
+            case "oldest" -> tips.findByPlaceOldest(placeId, categoryId, pageable);
+            case "likes" -> tips.findByPlaceLikes(placeId, categoryId, pageable);
+            default -> tips.findByPlaceLatest(placeId, categoryId, pageable);
+        };
+    }
+
+    @Transactional
+    public TipCreateResponse createTip(Long userId, Long categoryId, String kakaoPlaceId, String placeName,
+            String placeAddress, BigDecimal latitude, BigDecimal longitude, String title, String content) {
+        User writer = users.findById(userId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "존재하지 않는 사용자입니다."));
+        Category category = categories.findById(categoryId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "존재하지 않는 카테고리입니다."));
+        Place place = places.findByKakaoPlaceId(kakaoPlaceId)
+                .orElseGet(() -> places.save(new Place(kakaoPlaceId, placeName, placeAddress, latitude, longitude, null)));
+        Instant validUntil = Instant.now().plus(TIP_VALID_DAYS, ChronoUnit.DAYS);
+        Tip tip = tips.save(new Tip(writer, place, category, title, content, null, validUntil));
+        return new TipCreateResponse(tip.getId(), place.getId());
     }
 
     public TipDetailResponse getDetail(Long tipId, Long currentUserId) {
@@ -228,7 +229,4 @@ public class TipService {
                 status, tip.getValidUntil(), tip.getCreatedAt(), tip.getUpdatedAt());
     }
 
-    private String trimToNull(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
-    }
 }
