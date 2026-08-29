@@ -88,4 +88,35 @@ class TipServiceTest {
         assertThatThrownBy(() -> tipService.cancelScrap(tip.getId(), writer.getId()))
                 .isInstanceOf(ApiException.class);
     }
+
+    @Test
+    void 댓글을_작성하고_목록에서_조회하고_본인_댓글만_삭제할_수_있다() {
+        User writer = new User("comment-writer@test.com");
+        em.persist(writer);
+        User other = new User("comment-other@test.com");
+        em.persist(other);
+        Category category = new Category("공부/작업");
+        em.persist(category);
+        Place place = new Place("kakao-3", "스터디카페", "서울", BigDecimal.valueOf(37.56), BigDecimal.valueOf(126.94), null);
+        em.persist(place);
+        Tip tip = new Tip(writer, place, category, "24시간 운영해요", "밤샘 작업 가능", null, Instant.now().plusSeconds(3600));
+        em.persist(tip);
+        em.flush();
+
+        var comment = tipService.addComment(tip.getId(), other.getId(), "저도 가봤는데 좋아요");
+        assertThat(comment.writerId()).isEqualTo(other.getId());
+        assertThat(comment.content()).isEqualTo("저도 가봤는데 좋아요");
+
+        var list = tipService.getComments(tip.getId(), org.springframework.data.domain.PageRequest.of(0, 10));
+        assertThat(list.getTotalElements()).isEqualTo(1);
+        assertThat(list.getContent().get(0).commentId()).isEqualTo(comment.commentId());
+
+        // 작성자가 아니면 삭제할 수 없다
+        assertThatThrownBy(() -> tipService.deleteComment(comment.commentId(), writer.getId()))
+                .isInstanceOf(ApiException.class);
+
+        tipService.deleteComment(comment.commentId(), other.getId());
+        var afterDelete = tipService.getComments(tip.getId(), org.springframework.data.domain.PageRequest.of(0, 10));
+        assertThat(afterDelete.getTotalElements()).isEqualTo(0);
+    }
 }

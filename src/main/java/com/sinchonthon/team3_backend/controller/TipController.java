@@ -1,7 +1,9 @@
 package com.sinchonthon.team3_backend.controller;
 
 import com.sinchonthon.team3_backend.common.ApiResponse;
+import com.sinchonthon.team3_backend.dto.request.TipCommentRequest;
 import com.sinchonthon.team3_backend.dto.request.TipReactionRequest;
+import com.sinchonthon.team3_backend.dto.response.TipCommentResponse;
 import com.sinchonthon.team3_backend.dto.response.TipDetailResponse;
 import com.sinchonthon.team3_backend.dto.response.TipFeedResponse;
 import com.sinchonthon.team3_backend.dto.response.TipReactionResponse;
@@ -59,6 +61,19 @@ public class TipController {
     ApiResponse<Void> cancelScrap(@PathVariable Long tipId, Authentication authentication) {
         service.cancelScrap(tipId, currentUserId(authentication));
         return ApiResponse.success(200, "꿀팁 스크랩 취소 성공", null);
+    }
+
+    @PostMapping("/{tipId}/comments")
+    ApiResponse<TipCommentResponse> addComment(@PathVariable Long tipId,
+            @Valid @RequestBody TipCommentRequest request, Authentication authentication) {
+        return ApiResponse.success(201, "댓글 작성 성공",
+                service.addComment(tipId, currentUserId(authentication), request.content()));
+    }
+
+    @GetMapping("/{tipId}/comments")
+    ApiResponse<Page<TipCommentResponse>> getComments(@PathVariable Long tipId,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ApiResponse.success(200, "댓글 목록 조회 성공", service.getComments(tipId, pageable));
     }
 
     private Long currentUserId(Authentication authentication) {
