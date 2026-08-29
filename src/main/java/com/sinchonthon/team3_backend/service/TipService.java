@@ -9,6 +9,7 @@ import com.sinchonthon.team3_backend.domain.tip.TipReactionId;
 import com.sinchonthon.team3_backend.domain.tip.TipScrap;
 import com.sinchonthon.team3_backend.domain.tip.TipScrapId;
 import com.sinchonthon.team3_backend.domain.user.User;
+import com.sinchonthon.team3_backend.dto.response.MyTipListResponse;
 import com.sinchonthon.team3_backend.dto.response.TipCommentResponse;
 import com.sinchonthon.team3_backend.dto.response.TipCreateResponse;
 import com.sinchonthon.team3_backend.dto.response.TipDetailResponse;
@@ -26,7 +27,9 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,6 +58,24 @@ public class TipService {
         this.users = users;
         this.places = places;
         this.categories = categories;
+    }
+
+    @Transactional(readOnly = true)
+    public MyTipListResponse findMine(Long userId, int page, int size) {
+        if (page < 0) throw new ApiException(HttpStatus.BAD_REQUEST, "페이지 번호는 0 이상이어야 합니다.");
+        if (size < 1 || size > 100) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "페이지 크기는 1 이상 100 이하여야 합니다.");
+        }
+        if (!users.existsById(userId)) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다.");
+        }
+        Page<Tip> result = tips.findAllByUserId(userId,
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
+        Instant now = Instant.now();
+        return new MyTipListResponse(
+                result.getContent().stream().map(tip -> toMyTipItem(tip, now)).toList(),
+                result.getNumber(), result.getSize(), result.getTotalElements(),
+                result.getTotalPages(), result.hasNext());
     }
 
     public Page<TipFeedResponse> getFeed(Long categoryId, Long userId, String keyword, String sort, Pageable pageable) {
@@ -194,4 +215,18 @@ public class TipService {
                 .map(TipReaction::isLike).orElse(null);
         return new TipReactionResponse(likeCount, dislikeCount, myReaction, tip.isFiltered());
     }
+
+    private MyTipListResponse.TipItem toMyTipItem(Tip tip, Instant now) {
+        Category category = tip.getCategory();
+        Place place = tip.getPlace();
+        MyTipListResponse.Status status = tip.getValidUntil().isAfter(now)
+                ? MyTipListResponse.Status.ACTIVE : MyTipListResponse.Status.EXPIRED;
+        return new MyTipListResponse.TipItem(
+                tip.getId(), new MyTipListResponse.CategoryInfo(category.getId(), category.getName()),
+                tip.getTitle(), tip.getContent(),
+                new MyTipListResponse.PlaceInfo(place.getId(), place.getName(), place.getAddress(),
+                        place.getLatitude(), place.getLongitude()),
+                status, tip.getValidUntil(), tip.getCreatedAt(), tip.getUpdatedAt());
+    }
+
 }

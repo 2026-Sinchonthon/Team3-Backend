@@ -48,7 +48,7 @@ CREATE TABLE tips (
   is_filtered BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_tips_user FOREIGN KEY (user_id) REFERENCES users (id),
+  CONSTRAINT fk_tips_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
   CONSTRAINT fk_tips_place FOREIGN KEY (place_id) REFERENCES places (id),
   CONSTRAINT fk_tips_category FOREIGN KEY (category_id) REFERENCES categories (id)
 );
@@ -78,7 +78,7 @@ CREATE TABLE tip_comments (
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_tip_comments_tip FOREIGN KEY (tip_id) REFERENCES tips (id) ON DELETE CASCADE,
-  CONSTRAINT fk_tip_comments_user FOREIGN KEY (user_id) REFERENCES users (id)
+  CONSTRAINT fk_tip_comments_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_tip_comments_tip_created ON tip_comments (tip_id, created_at);

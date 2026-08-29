@@ -39,6 +39,11 @@ public class User {
         this.livingAloneYears = 0;
     }
 
+    public void updateOnboarding(String nickname, int livingAloneYears) {
+        this.nickname = nickname;
+        this.livingAloneYears = livingAloneYears;
+    }
+
     @PrePersist
     void createTimestamps() {
         Instant now = Instant.now();
