@@ -2,6 +2,8 @@ package com.sinchonthon.team3_backend.controller;
 
 import com.sinchonthon.team3_backend.common.ApiResponse;
 import com.sinchonthon.team3_backend.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -13,6 +15,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "Auth", description = "구글 로그인, 토큰 재발급, 로그아웃")
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
@@ -25,6 +28,8 @@ public class AuthController {
         this.secureCookie = secureCookie;
     }
 
+    @Operation(summary = "구글 로그인", description = "구글에서 발급받은 ID Token으로 로그인/회원가입을 처리합니다. 인증이 필요 없습니다.",
+            security = {})
     @PostMapping("/oauth/google")
     ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request,
             HttpServletRequest servletRequest, HttpServletResponse response) {
@@ -36,6 +41,8 @@ public class AuthController {
                         login.tokens().accessSeconds(), login.fresh())));
     }
 
+    @Operation(summary = "액세스 토큰 재발급", description = "쿠키의 refresh_token으로 새 액세스 토큰을 발급합니다. 인증이 필요 없습니다.",
+            security = {})
     @PostMapping("/token/refresh")
     ApiResponse<TokenResponse> refresh(
             @CookieValue(name = "refresh_token", required = false) String raw,
@@ -46,6 +53,7 @@ public class AuthController {
                 new TokenResponse(tokens.access(), tokens.accessSeconds()));
     }
 
+    @Operation(summary = "로그아웃", description = "현재 refresh_token 세션을 폐기합니다.")
     @PostMapping("/logout")
     ApiResponse<Void> logout(
             @CookieValue(name = "refresh_token", required = false) String raw,
