@@ -58,9 +58,15 @@ public class TipService {
     }
 
     public Page<TipFeedResponse> getFeed(Long categoryId, Long userId, String keyword, String sort, Pageable pageable) {
-        return "likes".equalsIgnoreCase(sort)
-                ? tips.findFeedByLikes(categoryId, userId, keyword, pageable)
-                : tips.findFeedByLatest(categoryId, userId, keyword, pageable);
+        return switch (sort == null ? "" : sort.toLowerCase()) {
+            case "likes" -> tips.findFeedByLikes(categoryId, userId, keyword, pageable);
+            case "trust" -> tips.findFeedByTrust(categoryId, userId, keyword, pageable);
+            // 관련도순은 키워드가 없으면 정의될 수 없어 최신순으로 대체한다
+            case "relevance" -> (keyword == null || keyword.isBlank())
+                    ? tips.findFeedByLatest(categoryId, userId, keyword, pageable)
+                    : tips.findFeedByRelevance(categoryId, userId, keyword, pageable);
+            default -> tips.findFeedByLatest(categoryId, userId, keyword, pageable);
+        };
     }
 
     public Page<TipFeedResponse> getTipsByPlace(Long placeId, Long categoryId, String sort, Pageable pageable) {
@@ -149,6 +155,16 @@ public class TipService {
         return new TipCommentResponse(comment.getId(), tip.getId(), writer.getId(), writer.getNickname(),
                 writer.getTrustScore(), writer.getLivingAloneYears(), comment.getContent(),
                 comment.getCreatedAt(), comment.getUpdatedAt());
+    }
+
+    @Transactional
+    public void deleteTip(Long tipId, Long userId) {
+        Tip tip = tips.findById(tipId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "존재하지 않는 게시글입니다."));
+        if (!tip.getUser().getId().equals(userId)) {
+            throw ApiException.forbidden("본인 게시글만 삭제할 수 있습니다.");
+        }
+        tips.delete(tip);
     }
 
     @Transactional
