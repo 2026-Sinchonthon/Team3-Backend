@@ -1,14 +1,34 @@
 package com.sinchonthon.team3_backend.repository;
 
 import com.sinchonthon.team3_backend.domain.tip.Tip;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import com.sinchonthon.team3_backend.dto.response.TipDetailResponse;
 import com.sinchonthon.team3_backend.dto.response.TipFeedResponse;
 
 public interface TipRepository extends JpaRepository<Tip, Long> {
+
+    @Query("""
+            SELECT new com.sinchonthon.team3_backend.dto.response.TipDetailResponse(
+                t.id, t.title, t.content, t.visitedAt, t.validUntil,
+                c.id, c.name, p.id, p.name,
+                u.id, u.nickname, u.trustScore, u.livingAloneYears,
+                t.isFiltered, t.createdAt, t.updatedAt,
+                (SELECT COUNT(r) FROM TipReaction r WHERE r.tip = t AND r.isLike = true),
+                (SELECT COUNT(r) FROM TipReaction r WHERE r.tip = t AND r.isLike = false),
+                (SELECT r.isLike FROM TipReaction r WHERE r.tip = t AND r.user.id = :currentUserId)
+            )
+            FROM Tip t
+            JOIN t.category c
+            JOIN t.place p
+            JOIN t.user u
+            WHERE t.id = :tipId
+            """)
+    Optional<TipDetailResponse> findDetailById(@Param("tipId") Long tipId, @Param("currentUserId") Long currentUserId);
 
     @Query("""
             SELECT new com.sinchonthon.team3_backend.dto.response.TipFeedResponse(

@@ -1,11 +1,16 @@
 package com.sinchonthon.team3_backend.controller;
 
 import com.sinchonthon.team3_backend.common.ApiResponse;
+import com.sinchonthon.team3_backend.dto.request.TipReactionRequest;
+import com.sinchonthon.team3_backend.dto.response.TipDetailResponse;
 import com.sinchonthon.team3_backend.dto.response.TipFeedResponse;
+import com.sinchonthon.team3_backend.dto.response.TipReactionResponse;
 import com.sinchonthon.team3_backend.service.TipService;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -25,5 +30,26 @@ public class TipController {
             @RequestParam(defaultValue = "latest") String sort,
             @PageableDefault(size = 20) Pageable pageable) {
         return ApiResponse.success(200, "게시글 피드 조회 성공", service.getFeed(categoryId, userId, keyword, sort, pageable));
+    }
+
+    @GetMapping("/{tipId}")
+    ApiResponse<TipDetailResponse> getDetail(@PathVariable Long tipId, Authentication authentication) {
+        return ApiResponse.success(200, "게시글 상세 조회 성공", service.getDetail(tipId, currentUserId(authentication)));
+    }
+
+    @PutMapping("/{tipId}/reactions")
+    ApiResponse<TipReactionResponse> react(@PathVariable Long tipId, @Valid @RequestBody TipReactionRequest request,
+            Authentication authentication) {
+        return ApiResponse.success(200, "반응 등록 성공",
+                service.react(tipId, currentUserId(authentication), request.isLike()));
+    }
+
+    @DeleteMapping("/{tipId}/reactions")
+    ApiResponse<TipReactionResponse> cancelReaction(@PathVariable Long tipId, Authentication authentication) {
+        return ApiResponse.success(200, "반응 취소 성공", service.cancelReaction(tipId, currentUserId(authentication)));
+    }
+
+    private Long currentUserId(Authentication authentication) {
+        return Long.valueOf(authentication.getName());
     }
 }
