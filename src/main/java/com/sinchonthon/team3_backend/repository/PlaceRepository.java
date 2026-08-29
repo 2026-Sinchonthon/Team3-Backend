@@ -24,6 +24,7 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
               AND (:maxLat IS NULL OR p.latitude <= :maxLat)
               AND (:minLng IS NULL OR p.longitude >= :minLng)
               AND (:maxLng IS NULL OR p.longitude <= :maxLng)
+              AND t.isFiltered = false
             """)
     List<Place> findMapPlaces(@Param("categoryId") Long categoryId,
             @Param("userId") Long userId,
