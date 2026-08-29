@@ -63,8 +63,64 @@ public interface TipRepository extends JpaRepository<Tip, Long> {
             WHERE (:categoryId IS NULL OR c.id = :categoryId)
               AND (:userId IS NULL OR u.id = :userId)
               AND (:keyword IS NULL OR t.title LIKE CONCAT('%', :keyword, '%') OR t.content LIKE CONCAT('%', :keyword, '%'))
-            ORDER BY (SELECT COUNT(r2) FROM TipReaction r2 WHERE r2.tip = t AND r2.isLike = true) DESC
+            ORDER BY (SELECT COUNT(r2) FROM TipReaction r2 WHERE r2.tip = t AND r2.isLike = true) DESC,
+                     (SELECT COUNT(r3) FROM TipReaction r3 WHERE r3.tip = t AND r3.isLike = false) ASC
             """)
     Page<TipFeedResponse> findFeedByLikes(@Param("categoryId") Long categoryId, @Param("userId") Long userId,
             @Param("keyword") String keyword, Pageable pageable);
+
+    @Query("""
+            SELECT new com.sinchonthon.team3_backend.dto.response.TipFeedResponse(
+                t.id, t.title, c.id, c.name, p.id, p.name,
+                u.id, u.nickname, u.trustScore, u.livingAloneYears,
+                t.isFiltered, t.createdAt,
+                (SELECT COUNT(r) FROM TipReaction r WHERE r.tip = t AND r.isLike = true)
+            )
+            FROM Tip t
+            JOIN t.category c
+            JOIN t.place p
+            JOIN t.user u
+            WHERE p.id = :placeId
+              AND (:categoryId IS NULL OR c.id = :categoryId)
+            ORDER BY t.createdAt DESC
+            """)
+    Page<TipFeedResponse> findByPlaceLatest(@Param("placeId") Long placeId, @Param("categoryId") Long categoryId,
+            Pageable pageable);
+
+    @Query("""
+            SELECT new com.sinchonthon.team3_backend.dto.response.TipFeedResponse(
+                t.id, t.title, c.id, c.name, p.id, p.name,
+                u.id, u.nickname, u.trustScore, u.livingAloneYears,
+                t.isFiltered, t.createdAt,
+                (SELECT COUNT(r) FROM TipReaction r WHERE r.tip = t AND r.isLike = true)
+            )
+            FROM Tip t
+            JOIN t.category c
+            JOIN t.place p
+            JOIN t.user u
+            WHERE p.id = :placeId
+              AND (:categoryId IS NULL OR c.id = :categoryId)
+            ORDER BY t.createdAt ASC
+            """)
+    Page<TipFeedResponse> findByPlaceOldest(@Param("placeId") Long placeId, @Param("categoryId") Long categoryId,
+            Pageable pageable);
+
+    @Query("""
+            SELECT new com.sinchonthon.team3_backend.dto.response.TipFeedResponse(
+                t.id, t.title, c.id, c.name, p.id, p.name,
+                u.id, u.nickname, u.trustScore, u.livingAloneYears,
+                t.isFiltered, t.createdAt,
+                (SELECT COUNT(r) FROM TipReaction r WHERE r.tip = t AND r.isLike = true)
+            )
+            FROM Tip t
+            JOIN t.category c
+            JOIN t.place p
+            JOIN t.user u
+            WHERE p.id = :placeId
+              AND (:categoryId IS NULL OR c.id = :categoryId)
+            ORDER BY (SELECT COUNT(r2) FROM TipReaction r2 WHERE r2.tip = t AND r2.isLike = true) DESC,
+                     (SELECT COUNT(r3) FROM TipReaction r3 WHERE r3.tip = t AND r3.isLike = false) ASC
+            """)
+    Page<TipFeedResponse> findByPlaceLikes(@Param("placeId") Long placeId, @Param("categoryId") Long categoryId,
+            Pageable pageable);
 }
