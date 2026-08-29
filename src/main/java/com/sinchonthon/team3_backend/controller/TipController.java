@@ -39,6 +39,12 @@ public class TipController {
         return ApiResponse.success(200, "게시글 상세 조회 성공", service.getDetail(tipId, currentUserId(authentication)));
     }
 
+    @DeleteMapping("/{tipId}")
+    ApiResponse<Void> deleteTip(@PathVariable Long tipId, Authentication authentication) {
+        service.deleteTip(tipId, currentUserId(authentication));
+        return ApiResponse.success(200, "게시글 삭제 성공", null);
+    }
+
     @PutMapping("/{tipId}/reactions")
     ApiResponse<TipReactionResponse> react(@PathVariable Long tipId, @Valid @RequestBody TipReactionRequest request,
             Authentication authentication) {

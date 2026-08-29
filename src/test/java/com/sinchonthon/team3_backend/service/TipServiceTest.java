@@ -9,6 +9,9 @@ import com.sinchonthon.team3_backend.domain.tip.Tip;
 import com.sinchonthon.team3_backend.domain.tip.TipScrapId;
 import com.sinchonthon.team3_backend.domain.user.User;
 import com.sinchonthon.team3_backend.exception.ApiException;
+import com.sinchonthon.team3_backend.repository.TipCommentRepository;
+import com.sinchonthon.team3_backend.repository.TipReactionRepository;
+import com.sinchonthon.team3_backend.repository.TipRepository;
 import com.sinchonthon.team3_backend.repository.TipScrapRepository;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
@@ -23,7 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
 class TipServiceTest {
 
     @Autowired TipService tipService;
+    @Autowired TipRepository tipRepository;
     @Autowired TipScrapRepository tipScrapRepository;
+    @Autowired TipReactionRepository tipReactionRepository;
+    @Autowired TipCommentRepository tipCommentRepository;
     @Autowired EntityManager em;
 
     @Test
@@ -118,5 +124,36 @@ class TipServiceTest {
         tipService.deleteComment(comment.commentId(), other.getId());
         var afterDelete = tipService.getComments(tip.getId(), org.springframework.data.domain.PageRequest.of(0, 10));
         assertThat(afterDelete.getTotalElements()).isEqualTo(0);
+    }
+
+    @Test
+    void 본인_게시글만_삭제할_수_있고_삭제하면_반응_스크랩_댓글도_함께_삭제된다() {
+        User writer = new User("delete-writer@test.com");
+        em.persist(writer);
+        User other = new User("delete-other@test.com");
+        em.persist(other);
+        Category category = new Category("급구 알바");
+        em.persist(category);
+        Place place = new Place("kakao-4", "편의점", "서울", BigDecimal.valueOf(37.57), BigDecimal.valueOf(126.95), null);
+        em.persist(place);
+        Tip tip = new Tip(writer, place, category, "급구합니다", "시급 만원", null, Instant.now().plusSeconds(3600));
+        em.persist(tip);
+        em.flush();
+
+        tipService.react(tip.getId(), other.getId(), true);
+        tipService.scrap(tip.getId(), other.getId());
+        tipService.addComment(tip.getId(), other.getId(), "지원했어요");
+
+        // 본인 게시글이 아니면 삭제할 수 없다
+        assertThatThrownBy(() -> tipService.deleteTip(tip.getId(), other.getId()))
+                .isInstanceOf(ApiException.class);
+
+        tipService.deleteTip(tip.getId(), writer.getId());
+        em.flush();
+
+        assertThat(tipRepository.existsById(tip.getId())).isFalse();
+        assertThat(tipReactionRepository.count()).isEqualTo(0);
+        assertThat(tipScrapRepository.count()).isEqualTo(0);
+        assertThat(tipCommentRepository.count()).isEqualTo(0);
     }
 }

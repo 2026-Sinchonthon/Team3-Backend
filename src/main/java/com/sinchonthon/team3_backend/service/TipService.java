@@ -115,6 +115,16 @@ public class TipService {
     }
 
     @Transactional
+    public void deleteTip(Long tipId, Long userId) {
+        Tip tip = tips.findById(tipId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "존재하지 않는 게시글입니다."));
+        if (!tip.getUser().getId().equals(userId)) {
+            throw ApiException.forbidden("본인 게시글만 삭제할 수 있습니다.");
+        }
+        tips.delete(tip);
+    }
+
+    @Transactional
     public void deleteComment(Long commentId, Long userId) {
         TipComment comment = comments.findById(commentId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "존재하지 않는 댓글입니다."));
