@@ -46,6 +46,7 @@ public interface TipRepository extends JpaRepository<Tip, Long> {
               AND (:keyword IS NULL
                    OR REPLACE(t.title, ' ', '') LIKE CONCAT('%', REPLACE(:keyword, ' ', ''), '%')
                    OR REPLACE(t.content, ' ', '') LIKE CONCAT('%', REPLACE(:keyword, ' ', ''), '%'))
+              AND t.isFiltered = false
             ORDER BY t.createdAt DESC
             """)
     Page<TipFeedResponse> findFeedByLatest(@Param("categoryId") Long categoryId, @Param("userId") Long userId,
@@ -67,6 +68,7 @@ public interface TipRepository extends JpaRepository<Tip, Long> {
               AND (:keyword IS NULL
                    OR REPLACE(t.title, ' ', '') LIKE CONCAT('%', REPLACE(:keyword, ' ', ''), '%')
                    OR REPLACE(t.content, ' ', '') LIKE CONCAT('%', REPLACE(:keyword, ' ', ''), '%'))
+              AND t.isFiltered = false
             ORDER BY (SELECT COUNT(r2) FROM TipReaction r2 WHERE r2.tip = t AND r2.isLike = true) DESC,
                      (SELECT COUNT(r3) FROM TipReaction r3 WHERE r3.tip = t AND r3.isLike = false) ASC
             """)
@@ -86,6 +88,7 @@ public interface TipRepository extends JpaRepository<Tip, Long> {
             JOIN t.user u
             WHERE p.id = :placeId
               AND (:categoryId IS NULL OR c.id = :categoryId)
+              AND t.isFiltered = false
             ORDER BY t.createdAt DESC
             """)
     Page<TipFeedResponse> findByPlaceLatest(@Param("placeId") Long placeId, @Param("categoryId") Long categoryId,
@@ -107,6 +110,7 @@ public interface TipRepository extends JpaRepository<Tip, Long> {
               AND (:keyword IS NULL
                    OR REPLACE(t.title, ' ', '') LIKE CONCAT('%', REPLACE(:keyword, ' ', ''), '%')
                    OR REPLACE(t.content, ' ', '') LIKE CONCAT('%', REPLACE(:keyword, ' ', ''), '%'))
+              AND t.isFiltered = false
             ORDER BY u.trustScore DESC, t.createdAt DESC
             """)
     Page<TipFeedResponse> findFeedByTrust(@Param("categoryId") Long categoryId, @Param("userId") Long userId,
@@ -125,6 +129,7 @@ public interface TipRepository extends JpaRepository<Tip, Long> {
             JOIN t.user u
             WHERE p.id = :placeId
               AND (:categoryId IS NULL OR c.id = :categoryId)
+              AND t.isFiltered = false
             ORDER BY t.createdAt ASC
             """)
     Page<TipFeedResponse> findByPlaceOldest(@Param("placeId") Long placeId, @Param("categoryId") Long categoryId,
@@ -143,6 +148,7 @@ public interface TipRepository extends JpaRepository<Tip, Long> {
             JOIN t.user u
             WHERE p.id = :placeId
               AND (:categoryId IS NULL OR c.id = :categoryId)
+              AND t.isFiltered = false
             ORDER BY (SELECT COUNT(r2) FROM TipReaction r2 WHERE r2.tip = t AND r2.isLike = true) DESC,
                      (SELECT COUNT(r3) FROM TipReaction r3 WHERE r3.tip = t AND r3.isLike = false) ASC
             """)
@@ -164,6 +170,7 @@ public interface TipRepository extends JpaRepository<Tip, Long> {
               AND (:userId IS NULL OR u.id = :userId)
               AND (REPLACE(t.title, ' ', '') LIKE CONCAT('%', REPLACE(:keyword, ' ', ''), '%')
                    OR REPLACE(t.content, ' ', '') LIKE CONCAT('%', REPLACE(:keyword, ' ', ''), '%'))
+              AND t.isFiltered = false
             ORDER BY
                 CASE
                     WHEN REPLACE(t.title, ' ', '') LIKE CONCAT('%', REPLACE(:keyword, ' ', ''), '%')

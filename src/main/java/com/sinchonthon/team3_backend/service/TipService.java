@@ -33,8 +33,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class TipService {
-    private static final long MIN_REACTION_THRESHOLD = 5;
-    private static final double DISLIKE_RATIO_THRESHOLD = 0.5;
+    private static final long MIN_REACTION_THRESHOLD = 11;
+    private static final double DISLIKE_RATIO_THRESHOLD = 0.3;
     private static final long TIP_VALID_DAYS = 365;
 
     private final TipRepository tips;
@@ -184,7 +184,7 @@ public class TipService {
             return;
         }
         long dislikes = reactions.countByTipAndIsLikeFalse(tip);
-        tip.updateFiltered((double) dislikes / total >= DISLIKE_RATIO_THRESHOLD);
+        tip.updateFiltered((double) dislikes / total > DISLIKE_RATIO_THRESHOLD);
     }
 
     private TipReactionResponse summarize(Tip tip, Long userId) {

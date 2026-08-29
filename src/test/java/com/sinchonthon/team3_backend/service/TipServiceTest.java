@@ -44,9 +44,9 @@ class TipServiceTest {
         em.persist(tip);
         em.flush();
 
-        // 반응 5개 중 4개가 비추 -> 최소 표본(5) 이상 + 비추 비율(80%) 임계치(50%) 초과로 필터링 대상
+        // 반응 11개 중 10개가 비추 -> 최소 표본(11) 이상 + 비추 비율(약 90.9%)이 임계치(30%) 초과로 필터링 대상
         User first = null;
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 11; i++) {
             User reactor = new User("reactor" + i + "@test.com");
             em.persist(reactor);
             em.flush();
@@ -54,17 +54,17 @@ class TipServiceTest {
             tipService.react(tip.getId(), reactor.getId(), i == 0);
         }
 
-        var afterFiveReactions = tipService.getDetail(tip.getId(), writer.getId());
-        assertThat(afterFiveReactions.likeCount()).isEqualTo(1);
-        assertThat(afterFiveReactions.dislikeCount()).isEqualTo(4);
-        assertThat(afterFiveReactions.isFiltered()).isTrue();
+        var afterElevenReactions = tipService.getDetail(tip.getId(), writer.getId());
+        assertThat(afterElevenReactions.likeCount()).isEqualTo(1);
+        assertThat(afterElevenReactions.dislikeCount()).isEqualTo(10);
+        assertThat(afterElevenReactions.isFiltered()).isTrue();
 
-        // 좋아요 반응 하나를 취소하면 표본 수가 임계치 아래로 떨어져 필터링이 풀린다
+        // 좋아요 반응 하나를 취소하면 표본 수가 임계치(11) 아래로 떨어져 필터링이 풀린다
         tipService.cancelReaction(tip.getId(), first.getId());
 
         var afterCancel = tipService.getDetail(tip.getId(), writer.getId());
         assertThat(afterCancel.likeCount()).isEqualTo(0);
-        assertThat(afterCancel.dislikeCount()).isEqualTo(4);
+        assertThat(afterCancel.dislikeCount()).isEqualTo(10);
         assertThat(afterCancel.isFiltered()).isFalse();
     }
 
