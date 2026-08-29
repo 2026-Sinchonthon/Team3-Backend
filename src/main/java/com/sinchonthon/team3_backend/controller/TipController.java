@@ -2,8 +2,10 @@ package com.sinchonthon.team3_backend.controller;
 
 import com.sinchonthon.team3_backend.common.ApiResponse;
 import com.sinchonthon.team3_backend.dto.request.TipCommentRequest;
+import com.sinchonthon.team3_backend.dto.request.TipCreateRequest;
 import com.sinchonthon.team3_backend.dto.request.TipReactionRequest;
 import com.sinchonthon.team3_backend.dto.response.TipCommentResponse;
+import com.sinchonthon.team3_backend.dto.response.TipCreateResponse;
 import com.sinchonthon.team3_backend.dto.response.TipDetailResponse;
 import com.sinchonthon.team3_backend.dto.response.TipFeedResponse;
 import com.sinchonthon.team3_backend.dto.response.TipReactionResponse;
@@ -39,6 +41,26 @@ public class TipController {
             @Parameter(description = "정렬 기준: latest, likes, trust, relevance") @RequestParam(defaultValue = "latest") String sort,
             @PageableDefault(size = 20) Pageable pageable) {
         return ApiResponse.success(200, "게시글 피드 조회 성공", service.getFeed(categoryId, userId, keyword, sort, pageable));
+    }
+
+    @Operation(summary = "장소별 게시글 조회", description = "특정 장소(placeId)에 등록된 게시글 목록을 카테고리 필터링, 정렬과 함께 조회합니다.")
+    @GetMapping("/place/{placeId}")
+    ApiResponse<Page<TipFeedResponse>> getTipsByPlace(@PathVariable Long placeId,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(defaultValue = "latest") String sort,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ApiResponse.success(200, "장소별 게시글 조회 성공",
+                service.getTipsByPlace(placeId, categoryId, sort, pageable));
+    }
+
+    @Operation(summary = "꿀팁 등록", description = "카카오맵 장소 정보를 기반으로 장소를 upsert하고 게시글을 등록합니다.")
+    @PostMapping
+    ApiResponse<TipCreateResponse> createTip(@Valid @RequestBody TipCreateRequest request,
+            Authentication authentication) {
+        var result = service.createTip(currentUserId(authentication), request.categoryId(), request.kakaoPlaceId(),
+                request.placeName(), request.placeAddress(), request.latitude(), request.longitude(),
+                request.title(), request.content());
+        return ApiResponse.success(201, "꿀팁 등록 성공", result);
     }
 
     @Operation(summary = "게시글 상세 조회", description = "작성자 신뢰지수/자취연차, 추천·비추 카운트, 내 반응 여부를 함께 반환합니다.")
