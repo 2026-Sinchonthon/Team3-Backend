@@ -1,10 +1,12 @@
 package com.sinchonthon.team3_backend.config;
 
 import com.sinchonthon.team3_backend.security.JwtAuthenticationFilter;
+import java.util.Arrays;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
@@ -22,15 +24,16 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/oauth/google", "/api/v1/auth/token/refresh",
-                                "/error").permitAll()
+                                "/error", "/health").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/places/map", "/api/categories").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwt, UsernamePasswordAuthenticationFilter.class).build();
     }
 
     @Bean
-    CorsConfigurationSource corsConfigurationSource(@Value("${app.frontend-origin}") String origin) {
+    CorsConfigurationSource corsConfigurationSource(@Value("${app.frontend-origin}") String origins) {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(origin));
+        config.setAllowedOrigins(Arrays.stream(origins.split(",")).map(String::trim).toList());
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         config.setAllowCredentials(true);

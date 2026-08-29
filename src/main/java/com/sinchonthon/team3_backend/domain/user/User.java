@@ -1,4 +1,4 @@
-package com.sinchonthon.team3_backend.domain;
+package com.sinchonthon.team3_backend.domain.user;
 
 import jakarta.persistence.*;
 import java.time.Instant;
@@ -35,7 +35,7 @@ public class User {
         this.email = email;
         this.passwordHash = SOCIAL_PASSWORD;
         this.nickname = "user-" + UUID.randomUUID().toString().substring(0, 8);
-        this.trustScore = 0;
+        this.trustScore = 50;
         this.livingAloneYears = 0;
     }
 

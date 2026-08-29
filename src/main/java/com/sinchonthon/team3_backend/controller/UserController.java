@@ -8,6 +8,7 @@ import com.sinchonthon.team3_backend.service.TipService;
 import com.sinchonthon.team3_backend.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -43,5 +44,11 @@ public class UserController {
         Long userId = Long.valueOf(authentication.getName());
         return ApiResponse.success(200, "내가 작성한 팁 조회 성공",
                 tipService.findMine(userId, page, size));
+    }
+
+    @DeleteMapping("/me")
+    ApiResponse<Void> deleteMyAccount(Authentication authentication) {
+        service.deleteAccount(Long.valueOf(authentication.getName()));
+        return ApiResponse.success(200, "계정 삭제 성공", null);
     }
 }

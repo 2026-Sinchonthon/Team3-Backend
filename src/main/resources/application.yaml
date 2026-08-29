@@ -2,25 +2,22 @@ spring:
   application:
     name: team3-backend
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/team3}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/sinchonping_db}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:pgAdmin설치비밀번호}
+    driver-class-name: org.postgresql.Driver
   jpa:
     open-in-view: false
-    defer-datasource-initialization: true
     hibernate:
       ddl-auto: update
     properties:
       hibernate.jdbc.time_zone: UTC
-  sql:
-    init:
-      mode: always
 
 server:
   port: ${PORT:8080}
 
 app:
-  frontend-origin: ${FRONTEND_ORIGIN:http://localhost:3000}
+  frontend-origin: ${FRONTEND_ORIGIN:http://localhost:3000,http://localhost:5173}
   jwt:
     secret: ${JWT_SECRET:local-development-jwt-secret-must-be-at-least-32-bytes}
     issuer: team3-backend
